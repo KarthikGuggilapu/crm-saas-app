@@ -1,6 +1,6 @@
 "use client";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { Register } from "@/components/auth/register";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -113,5 +113,13 @@ export default function RegisterPage() {
       disableEmail={!!invite}
       disableCompany={!!invite}
     />
+  );
+}
+
+export function RegisterPageWithSuspense() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <RegisterPage />
+    </Suspense>
   );
 }
