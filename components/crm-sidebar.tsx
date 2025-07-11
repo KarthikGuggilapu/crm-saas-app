@@ -95,13 +95,13 @@ export function CRMSidebar({ currentPage, onPageChange, onSignOut }: CRMSidebarP
           </SidebarMenuItem>
         </SidebarMenu>
 
-        <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-4 border border-blue-100 mt-4">
+        {/* <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-4 border border-blue-100 mt-4">
           <h3 className="font-semibold text-slate-900 mb-1">Upgrade to Pro</h3>
           <p className="text-sm text-slate-600 mb-3">Unlock advanced features and unlimited contacts</p>
           <button className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-medium py-2 px-4 rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all">
             Upgrade Now
           </button>
-        </div>
+        </div> */}
       </SidebarFooter>
     </Sidebar>
   )

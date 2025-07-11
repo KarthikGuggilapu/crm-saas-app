@@ -38,31 +38,45 @@ export function Dashboard() {
   useEffect(() => {
     const supabase = createClient()
 
+    async function getUserAndCompany() {
+      const { data: userData } = await supabase.auth.getUser()
+      const user = userData?.user
+      if (!user) return { user: null, company: null }
+      const { data: profile } = await supabase.from("users").select("company").eq("id", user.id).single()
+      return { user, company: profile?.company }
+    }
+
     // Overview cards
     async function fetchOverview() {
       setOverviewLoading(true)
       setOverviewError(null)
       try {
+        const { user, company } = await getUserAndCompany()
+        if (!user) throw new Error("User not authenticated")
         // Total Leads
         const { count: leadsCount } = await supabase
           .from("leads")
           .select("id", { count: "exact", head: true })
+          .eq("company", company)
         // Active Deals
         const { count: activeDeals } = await supabase
           .from("deals")
           .select("id", { count: "exact", head: true })
           .eq("stage", "negotiation")
+          .eq("company", company)
         // Closed Sales (won deals, sum value)
         const { data: wonDeals, error: wonError } = await supabase
           .from("deals")
           .select("value")
           .eq("stage", "won")
+          .eq("company", company)
         // Tasks Today
         const today = new Date().toISOString().slice(0, 10)
         const { count: tasksToday } = await supabase
           .from("tasks")
           .select("id", { count: "exact", head: true })
           .eq("due_date", today)
+          .eq("company", company)
         setOverview([
           {
             title: "Total Leads",
@@ -110,6 +124,7 @@ export function Dashboard() {
       setPipelineLoading(true)
       setPipelineError(null)
       try {
+        const { company } = await getUserAndCompany()
         // Count deals by stage
         const stages = [
           { name: "Lead In", key: "lead-in", color: "#3b82f6" },
@@ -125,6 +140,7 @@ export function Dashboard() {
               .from("deals")
               .select("id", { count: "exact", head: true })
               .eq("stage", stage.key)
+              .eq("company", company)
             return { name: stage.name, value: count ?? 0, color: stage.color }
           })
         )
@@ -141,11 +157,13 @@ export function Dashboard() {
       setRevenueLoading(true)
       setRevenueError(null)
       try {
+        const { company } = await getUserAndCompany()
         // Get all won deals
         const { data, error } = await supabase
           .from("deals")
           .select("value, won_at")
           .eq("stage", "won")
+          .eq("company", company)
         if (error) throw error
         // Group by month
         const monthly: Record<string, number> = {}
@@ -169,13 +187,28 @@ export function Dashboard() {
       setActivitiesLoading(true)
       setActivitiesError(null)
       try {
+        const { company } = await getUserAndCompany()
         const { data, error } = await supabase
           .from("activities")
           .select("id, type, title, description, created_at, assigned_to")
+          .eq("company", company)
           .order("created_at", { ascending: false })
           .limit(6)
         if (error) throw error
-        // Map to UI format
+        // Fetch user names for assigned_to
+        const userIds = Array.from(new Set((data || []).map((a: any) => a.assigned_to).filter(Boolean)))
+        let userMap: Record<string, { first_name: string; last_name: string }> = {}
+        if (userIds.length > 0) {
+          const { data: usersData } = await supabase
+            .from("users")
+            .select("id, first_name, last_name")
+            .in("id", userIds)
+          if (usersData) {
+            usersData.forEach((u: any) => {
+              userMap[u.id] = { first_name: u.first_name, last_name: u.last_name }
+            })
+          }
+        }
         setActivities(
           (data || []).map((a: any) => ({
             id: a.id,
@@ -183,9 +216,13 @@ export function Dashboard() {
             title: a.title,
             description: a.description,
             time: a.created_at ? timeAgo(a.created_at) : "-",
-            user: a.assigned_to || "-",
-            avatar: a.user ? initials(a.user) : "U",
-            color: "bg-slate-100 text-slate-700", // You can color by type if you want
+            user: a.assigned_to && userMap[a.assigned_to]
+              ? `${userMap[a.assigned_to].first_name} ${userMap[a.assigned_to].last_name}`
+              : "-",
+            avatar: a.assigned_to && userMap[a.assigned_to]
+              ? initials(`${userMap[a.assigned_to].first_name} ${userMap[a.assigned_to].last_name}`)
+              : "U",
+            color: "bg-slate-100 text-slate-700",
           }))
         )
       } catch (e: any) {

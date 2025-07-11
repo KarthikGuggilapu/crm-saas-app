@@ -34,6 +34,7 @@ export function TopNavigation({ onNotificationsToggle, notificationsOpen, user }
   const router = useRouter()
   const { user: contextUser, loading } = useUser()
 
+
   return (
     <header className="bg-white border-b border-slate-200 px-6 py-4 sticky top-0 z-50 w-full">
       <div className="flex items-center justify-between min-w-0">
@@ -68,22 +69,28 @@ export function TopNavigation({ onNotificationsToggle, notificationsOpen, user }
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="flex items-center gap-2 hover:bg-slate-100 px-3 flex-shrink-0">
                 <Avatar className="w-8 h-8">
-                  {user?.avatarUrl ? (
-                    <AvatarImage src={user.avatarUrl} />
+                  
+                  {contextUser?.avatarUrl ? (
+                    
+                    <AvatarImage src={contextUser.avatarUrl} />
                   ) : (
                     <AvatarFallback
                       className="bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 text-white text-sm flex items-center justify-center w-full h-full"
                       style={{ fontWeight: 600, fontSize: "1rem" }}
                     >
-                      {user?.firstName?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || "U"}
+                      {contextUser?.first_name?.[0]?.toUpperCase() ||
+                       contextUser?.firstName?.[0]?.toUpperCase() ||
+                       contextUser?.email?.[0]?.toUpperCase() || "U"}
                     </AvatarFallback>
+
+                    
                   )}
                 </Avatar>
                 <div className="text-left hidden sm:block">
                   <p className="text-sm font-medium text-slate-900">
-                    {user?.firstName} {user?.lastName}
+                    {contextUser?.first_name || contextUser?.firstName} {contextUser?.last_name || contextUser?.lastName}
                   </p>
-                  <p className="text-xs text-slate-500">{user?.company || user?.email}</p>
+                  <p className="text-xs text-slate-500">{contextUser?.company || contextUser?.email}</p>
                 </div>
               </Button>
             </DropdownMenuTrigger>

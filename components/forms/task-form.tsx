@@ -26,9 +26,10 @@ interface TaskFormProps {
   deals?: { id: string; title: string }[]
   leads?: { id: string; name: string }[]
   companies?: { id: string; name: string }[]
+  teamMembers?: { id: string; first_name: string; last_name: string }[]
 }
 
-export function TaskForm({ task, onSubmit, onCancel, isEdit = false, contacts = [], deals = [], leads = [], companies = [] }: TaskFormProps) {
+export function TaskForm({ task, onSubmit, onCancel, isEdit = false, contacts = [], deals = [], leads = [], companies = [], teamMembers = [] }: TaskFormProps) {
   const [formData, setFormData] = useState({
     title: task?.title || "Untitled Task",
     description: task?.description || "",
@@ -108,12 +109,12 @@ export function TaskForm({ task, onSubmit, onCancel, isEdit = false, contacts = 
               <h3 className="text-lg font-semibold text-slate-900 border-b border-slate-200 pb-2">Basic Information</h3>
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="title">Task Title *</Label>
+                  <Label htmlFor="title">Title *</Label>
                   <Input
                     id="title"
-                    value={formData.title}
+                    value={formData.title ?? ""}
                     onChange={(e) => updateFormData("title", e.target.value)}
-                    placeholder="Follow up with TechStart Inc."
+                    placeholder="Task title"
                     required
                   />
                 </div>
@@ -184,23 +185,14 @@ export function TaskForm({ task, onSubmit, onCancel, isEdit = false, contacts = 
               <h3 className="text-lg font-semibold text-slate-900 border-b border-slate-200 pb-2">Scheduling</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Due Date *</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" className="w-full justify-start text-left font-normal">
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {formData.dueDate ? format(formData.dueDate, "PPP") : "Pick a date"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                      <Calendar
-                        mode="single"
-                        selected={formData.dueDate}
-                        onSelect={(date) => updateFormData("dueDate", date)}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
+                  <Label htmlFor="dueDate">Due Date *</Label>
+                  <Input
+                    id="dueDate"
+                    type="date"
+                    value={formData.dueDate ?? ""}
+                    onChange={(e) => updateFormData("dueDate", e.target.value)}
+                    required
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="dueTime">Due Time</Label>
@@ -209,7 +201,7 @@ export function TaskForm({ task, onSubmit, onCancel, isEdit = false, contacts = 
                     <Input
                       id="dueTime"
                       type="time"
-                      value={formData.dueTime}
+                      value={formData.dueTime ?? ""}
                       onChange={(e) => updateFormData("dueTime", e.target.value)}
                       className="pl-10"
                     />
@@ -220,7 +212,7 @@ export function TaskForm({ task, onSubmit, onCancel, isEdit = false, contacts = 
                   <Input
                     id="estimatedHours"
                     type="number"
-                    value={formData.estimatedHours}
+                    value={formData.estimatedHours ?? ""}
                     onChange={(e) => updateFormData("estimatedHours", e.target.value)}
                     placeholder="2.5"
                     step="0.5"
@@ -257,20 +249,21 @@ export function TaskForm({ task, onSubmit, onCancel, isEdit = false, contacts = 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="assignedTo">Assigned To</Label>
-                  <Select value={formData.assignedTo} onValueChange={(value) => updateFormData("assignedTo", value)}>
+                  <Select value={formData.assignedTo ?? "none"} onValueChange={(value) => updateFormData("assignedTo", value === "none" ? null : value)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select team member" />
                     </SelectTrigger>
                     <SelectContent>
-                      {contacts.length === 0 ? (
-                        <SelectItem value="" disabled>No contacts found</SelectItem>
+                      {teamMembers.length === 0 ? (
+                        <SelectItem value="none" disabled>No team members found</SelectItem>
                       ) : (
-                        contacts.map(contact => (
-                          <SelectItem key={contact.id} value={contact.id}>
-                            {contact.first_name} {contact.last_name}
-                          </SelectItem>
-                        ))
+                        <SelectItem value="none">Unassigned</SelectItem>
                       )}
+                      {teamMembers.map((member) => (
+                        <SelectItem key={member.id} value={member.id}>
+                          {member.first_name} {member.last_name}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>

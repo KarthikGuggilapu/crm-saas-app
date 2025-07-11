@@ -56,11 +56,11 @@ export default function RegisterPage() {
     // If invite, override with invite data
     if (invite) {
       email = invite.email;
-      company = invite.company;
+      company = companyName;
       role = invite.role || "member";
     }
 
-    const { error, data: signUpData } = await supabase.auth.signUp({
+    const { error } = await supabase.auth.signUp({
       email,
       password: data.password,
       options: {
@@ -90,6 +90,7 @@ export default function RegisterPage() {
     toast({
       title: "Registration Successful",
       description: "Account created! Confirm your email...",
+      variant: "default",
     });
 
     setTimeout(() => {

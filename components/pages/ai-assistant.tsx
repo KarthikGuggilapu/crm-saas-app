@@ -32,48 +32,53 @@ const suggestedPrompts = [
   },
 ]
 
-const chatHistory = [
-  {
-    id: 1,
-    type: "user",
-    message: "Can you summarize my deals that are in negotiation stage?",
-    timestamp: "10:30 AM",
-  },
-  {
-    id: 2,
-    type: "assistant",
-    message:
-      "You currently have 3 deals in negotiation stage with a total value of $185,000:\n\n1. **Custom Development** - NextGen Tech ($85,000)\n   - Contact: Robert Johnson\n   - Close date: Jan 30, 2024\n   - Probability: 80%\n\n2. **Data Analytics Platform** - Smart Systems ($60,000)\n   - Contact: David Kim\n   - Close date: Feb 5, 2024\n   - Probability: 65%\n\n3. **Security Audit Service** - Digital Dynamics ($40,000)\n   - Contact: Lisa Park\n   - Close date: Feb 12, 2024\n   - Probability: 70%\n\n**Recommendations:**\n- Follow up with NextGen Tech this week as the close date is approaching\n- Send additional case studies to Smart Systems to increase confidence\n- Schedule a final presentation with Digital Dynamics",
-    timestamp: "10:31 AM",
-  },
-  {
-    id: 3,
-    type: "user",
-    message: "What should I prioritize today?",
-    timestamp: "10:35 AM",
-  },
-  {
-    id: 4,
-    type: "assistant",
-    message:
-      "Based on your current pipeline and tasks, here are your top priorities for today:\n\n**🔥 High Priority:**\n1. Call NextGen Tech (Robert Johnson) - Deal closes in 2 days\n2. Send proposal follow-up to TechStart Inc. - $45K opportunity\n3. Prepare contract for Innovation Labs - High-value CRM deal\n\n**📋 Medium Priority:**\n4. Schedule demo with Global Solutions\n5. Research Smart Systems technical requirements\n\n**💡 Quick Wins:**\n6. Send thank you email to Future Corp\n7. Update deal stages in pipeline\n\nFocus on the high-priority items first - they have the biggest impact on your monthly targets!",
-    timestamp: "10:36 AM",
-  },
-]
-
 export function AIAssistant() {
   const [message, setMessage] = useState("")
   const [isTyping, setIsTyping] = useState(false)
+  const [chat, setChat] = useState<any[]>([])
 
-  const handleSendMessage = () => {
-    if (message.trim()) {
-      console.log("Sending message:", message)
-      setMessage("")
-      setIsTyping(true)
-
-      setTimeout(() => {
-        setIsTyping(false)
-      }, 2000)
+  const handleSendMessage = async () => {
+    if (!message.trim()) return
+    const userMsg = {
+      id: Date.now(),
+      type: "user",
+      message,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    }
+    setChat((prev) => [...prev, userMsg])
+    setMessage("")
+    setIsTyping(true)
+    try {
+      const res = await fetch("/api/ai-assistant", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: userMsg.message,
+          history: [...chat, userMsg].map(({ type, message }) => ({ type, message })),
+        })
+      })
+      const data = await res.json()
+      setIsTyping(false)
+      setChat((prev) => [
+        ...prev,
+        {
+          id: Date.now() + 1,
+          type: "assistant",
+          message: data.message || "Sorry, I couldn't generate a response.",
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }
+      ])
+    } catch (e) {
+      setIsTyping(false)
+      setChat((prev) => [
+        ...prev,
+        {
+          id: Date.now() + 1,
+          type: "assistant",
+          message: "Sorry, there was an error contacting the AI.",
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }
+      ])
     }
   }
 
@@ -115,7 +120,7 @@ export function AIAssistant() {
           <CardContent className="p-0">
             <ScrollArea className="h-[400px] sm:h-[500px] p-4 sm:p-6">
               <div className="space-y-4 sm:space-y-6">
-                {chatHistory.map((chat) => (
+                {chat.map((chat) => (
                   <div key={chat.id} className={`flex gap-3 ${chat.type === "user" ? "justify-end" : "justify-start"}`}>
                     {chat.type === "assistant" && (
                       <Avatar className="w-8 h-8 mt-1 flex-shrink-0">
@@ -177,13 +182,13 @@ export function AIAssistant() {
                   placeholder="Ask me anything about your sales data..."
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
+                  onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
                   className="flex-1 text-sm"
                 />
                 <Button
                   onClick={handleSendMessage}
                   className="bg-blue-600 hover:bg-blue-700 text-white flex-shrink-0"
-                  disabled={!message.trim()}
+                  disabled={!message.trim() || isTyping}
                   size="sm"
                 >
                   <Send className="w-4 h-4" />

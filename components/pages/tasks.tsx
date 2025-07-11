@@ -65,6 +65,7 @@ export function Tasks() {
   const [contactsError, setContactsError] = useState<string | null>(null)
   const [linkedLoading, setLinkedLoading] = useState(true)
   const [linkedError, setLinkedError] = useState<string | null>(null)
+  const [teamMembers, setTeamMembers] = useState<{ id: string; first_name: string; last_name: string }[]>([])
 
   const fetchTasks = async () => {
     setLoading(true)
@@ -156,6 +157,26 @@ export function Tasks() {
     fetchLinked()
   }, [])
 
+  useEffect(() => {
+    const fetchTeamMembers = async () => {
+      const supabase = createClient()
+      // Get current user
+      const { data: userData } = await supabase.auth.getUser()
+      const user = userData?.user
+      if (!user) return
+      // Get user's company
+      const { data: profile } = await supabase.from("users").select("company").eq("id", user.id).single()
+      if (!profile?.company) return
+      // Fetch all users in the same company
+      const { data: members } = await supabase
+        .from("users")
+        .select("id, first_name, last_name")
+        .eq("company", profile.company)
+      setTeamMembers(members || [])
+    }
+    fetchTeamMembers()
+  }, [])
+
   const handleAddTask = async (formData: any) => {
     setError(null)
     setActionLoading(true)
@@ -167,14 +188,19 @@ export function Tasks() {
       setActionLoading(false)
       return
     }
+    if (!formData.title || !formData.dueDate) {
+      setError("Title and Due Date are required.")
+      setActionLoading(false)
+      return
+    }
     const payload = {
       title: formData.title,
       description: formData.description,
       priority: formData.priority || "Medium",
       status: formData.status || "pending",
-      due_date: formData.dueDate ? new Date(formData.dueDate).toISOString().slice(0, 10) : null,
+      due_date: new Date(formData.dueDate).toISOString().slice(0, 10),
       due_time: formData.dueTime || null,
-      assigned_to: formData.assignedTo || null,
+      assigned_to: formData.assignedTo && formData.assignedTo !== "" ? formData.assignedTo : null,
       linked_to: formData.linkedTo || null,
       linked_type: formData.linkedType || null,
       category: formData.category || null,
@@ -223,7 +249,7 @@ export function Tasks() {
       status: formData.status || "pending",
       due_date: formData.dueDate ? new Date(formData.dueDate).toISOString().slice(0, 10) : null,
       due_time: formData.dueTime || null,
-      assigned_to: formData.assignedTo || null,
+      assigned_to: formData.assignedTo && formData.assignedTo !== "" ? formData.assignedTo : null,
       linked_to: formData.linkedTo || null,
       linked_type: formData.linkedType || null,
       category: formData.category || null,
@@ -304,6 +330,7 @@ export function Tasks() {
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <UIDialogTitle>Add Task</UIDialogTitle>
             <TaskForm
               onSubmit={handleAddTask}
               onCancel={() => setIsAddTaskOpen(false)}
@@ -311,6 +338,7 @@ export function Tasks() {
               deals={deals}
               leads={leads}
               companies={companies}
+              teamMembers={teamMembers}
             />
           </DialogContent>
         </Dialog>
@@ -497,6 +525,7 @@ export function Tasks() {
       {/* Edit Task Dialog */}
       <Dialog open={isEditTaskOpen} onOpenChange={(open) => { setIsEditTaskOpen(open); if (!open) setEditTask(null) }}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <UIDialogTitle>Edit Task</UIDialogTitle>
           <TaskForm
             task={editTask}
             onSubmit={handleUpdateTask}
@@ -506,6 +535,7 @@ export function Tasks() {
             deals={deals}
             leads={leads}
             companies={companies}
+            teamMembers={teamMembers}
           />
         </DialogContent>
       </Dialog>

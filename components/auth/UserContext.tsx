@@ -9,24 +9,39 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let attempts = 0;
+    let timeout: any;
+
     const fetchUser = async () => {
       setLoading(true);
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        // Optionally fetch profile data
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (authUser) {
         const { data: profile } = await supabase
           .from("users")
           .select("*")
-          .eq("id", user.id)
+          .eq("id", authUser.id)
           .single();
-        setUser({ ...user, ...profile });
+        console.log("UserContext fetched:", { authUser, profile });
+        // If names are missing, retry a few times (for new users)
+        if (
+          profile &&
+          (!profile.first_name || !profile.last_name) &&
+          attempts < 5
+        ) {
+          attempts++;
+          timeout = setTimeout(fetchUser, 1000); // retry after 1s
+          return;
+        }
+        setUser({ ...authUser, ...profile });
       } else {
         setUser(null);
       }
       setLoading(false);
     };
+
     fetchUser();
+    return () => clearTimeout(timeout);
   }, []);
 
   return (

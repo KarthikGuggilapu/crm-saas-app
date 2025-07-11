@@ -14,6 +14,7 @@ import { DealForm } from "@/components/forms/deal-form"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { createClient } from "@/lib/supabase/client"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 const dealStages = [
   { id: "lead-in", title: "Lead In", color: "bg-slate-50 border-slate-200" },
@@ -63,6 +64,8 @@ export function Deals() {
   const [deleteDeal, setDeleteDeal] = useState<any | null>(null)
   const [actionLoading, setActionLoading] = useState(false)
   const [draggedDeal, setDraggedDeal] = useState<any>(null)
+  const [teamMembers, setTeamMembers] = useState<any[]>([])
+  const [contacts, setContacts] = useState<any[]>([])
 
   const fetchDeals = async () => {
     setLoading(true)
@@ -87,6 +90,38 @@ export function Deals() {
     if (error) setError(error.message)
     setDeals(data || [])
     setLoading(false)
+
+    // Fetch team members and contacts
+    fetchTeamAndContacts(user)
+  }
+
+  const fetchTeamAndContacts = async (user: any) => {
+    const supabase = createClient()
+
+    // Fetch user's company
+    const { data: profile } = await supabase
+      .from("users")
+      .select("company")
+      .eq("id", user.id)
+      .single()
+
+    if (!profile?.company) return
+
+    // Fetch team members in the same company
+    const { data: members } = await supabase
+      .from("users")
+      .select("id, first_name, last_name, email")
+      .eq("company", profile.company)
+
+    setTeamMembers(members || [])
+
+    // Fetch contacts in the same company
+    const { data: contactsData } = await supabase
+      .from("contacts")
+      .select("id, first_name, last_name, email")
+      .eq("company", profile.company)
+
+    setContacts(contactsData || [])
   }
 
   useEffect(() => {
@@ -99,6 +134,18 @@ export function Deals() {
     }
     printSession()
   }, [])
+
+  useEffect(() => {
+    const fetchAll = async () => {
+      const supabase = createClient();
+      const { data: userData } = await supabase.auth.getUser();
+      const user = userData?.user;
+      if (user) {
+        fetchTeamAndContacts(user);
+      }
+    };
+    fetchAll();
+  }, []);
 
   const handleAddDeal = async (formData: any) => {
     setError(null)
@@ -269,9 +316,12 @@ export function Deals() {
               </Button>
             </SheetTrigger>
             <SheetContent className="w-full sm:max-w-4xl overflow-y-auto">
+              <DialogTitle>Add New Deal</DialogTitle>
               <DealForm
                 onSubmit={handleAddDeal}
                 onCancel={() => setIsAddDealOpen(false)}
+                teamMembers={teamMembers}
+                contacts={contacts}
               />
             </SheetContent>
           </Sheet>
@@ -443,10 +493,13 @@ export function Deals() {
                       </Button>
                     </SheetTrigger>
                     <SheetContent className="w-full sm:max-w-4xl overflow-y-auto">
+                      <DialogTitle>Add New Deal</DialogTitle>
                       <DealForm
                         deal={{ stage: stage.id }}
                         onSubmit={handleAddDeal}
                         onCancel={() => {}}
+                        teamMembers={teamMembers}
+                        contacts={contacts}
                       />
                     </SheetContent>
                   </Sheet>
@@ -459,11 +512,14 @@ export function Deals() {
         {/* Edit Deal Sheet */}
         <Sheet open={isEditDealOpen} onOpenChange={(open) => { setIsEditDealOpen(open); if (!open) setEditDeal(null) }}>
           <SheetContent className="w-full sm:max-w-4xl overflow-y-auto">
+            <DialogTitle>Edit Deal</DialogTitle>
             <DealForm
               deal={editDeal}
               onSubmit={handleUpdateDeal}
               onCancel={() => { setIsEditDealOpen(false); setEditDeal(null) }}
               isEdit={true}
+              teamMembers={teamMembers}
+              contacts={contacts}
             />
           </SheetContent>
         </Sheet>
@@ -471,6 +527,7 @@ export function Deals() {
         {/* Delete Confirmation Dialog */}
         <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
           <DialogContent>
+            <DialogTitle>Delete Deal</DialogTitle>
             <DialogHeader>
               <DialogTitle>Delete Deal</DialogTitle>
             </DialogHeader>

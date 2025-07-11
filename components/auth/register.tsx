@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -34,6 +34,12 @@ export function Register({ onRegister, onSwitchToLogin, onBackToLanding, prefill
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
+
+  useEffect(() => {
+    if (prefillCompany) {
+      setFormData((prev) => ({ ...prev, company: prefillCompany }));
+    }
+  }, [prefillCompany]);
 
   const passwordRequirements = [
     { text: "At least 8 characters", met: formData.password.length >= 8 },

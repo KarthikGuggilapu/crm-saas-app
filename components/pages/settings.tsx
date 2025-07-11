@@ -38,6 +38,7 @@ export function Settings() {
   const [loading, setLoading] = useState(false)
   const { toast } = useToast()
   const [pendingInvites, setPendingInvites] = useState<any[]>([])
+  const [notifLoading, setNotifLoading] = useState(false)
 
   useEffect(() => {
     const fetchTeam = async () => {
@@ -100,6 +101,46 @@ export function Settings() {
     fetchInvites()
   }, [user?.company])
 
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      const supabase = createClient()
+      const { data: userData } = await supabase.auth.getUser()
+      const user = userData?.user
+      if (!user) return
+      const { data: profile } = await supabase
+        .from("users")
+        .select("notification_prefs")
+        .eq("id", user.id)
+        .single()
+      if (profile && profile.notification_prefs) {
+        setNotifications(profile.notification_prefs)
+      }
+    }
+    fetchNotifications()
+  }, [])
+
+  const handleSaveNotifications = async () => {
+    setNotifLoading(true)
+    const supabase = createClient()
+    const { data: userData } = await supabase.auth.getUser()
+    const user = userData?.user
+    if (!user) {
+      toast({ title: "Error", description: "Not authenticated", variant: "destructive" })
+      setNotifLoading(false)
+      return
+    }
+    const { error } = await supabase
+      .from("users")
+      .update({ notification_prefs: notifications })
+      .eq("id", user.id)
+    setNotifLoading(false)
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" })
+    } else {
+      toast({ title: "Preferences saved!", description: "Your notification preferences have been updated." })
+    }
+  }
+
   const handleInvite = async () => {
     setLoading(true)
     const res = await fetch("/api/invite", {
@@ -126,24 +167,25 @@ export function Settings() {
         <p className="text-slate-600 mt-1">Manage your account preferences and team settings</p>
       </div>
 
-      <Tabs defaultValue="profile" className="space-y-4 sm:space-y-6">
+      <Tabs defaultValue="team" className="space-y-4 sm:space-y-6">
         <div className="overflow-x-auto">
-          <TabsList className="grid w-full grid-cols-4 min-w-[400px] sm:min-w-0">
-            <TabsTrigger value="profile" className="gap-1 sm:gap-2 text-xs sm:text-sm">
+          <TabsList className="grid w-full grid-cols-3 min-w-[400px] sm:min-w-0">
+            {/* <TabsTrigger value="profile" className="gap-1 sm:gap-2 text-xs sm:text-sm">
               <User className="w-3 h-3 sm:w-4 sm:h-4" />
               <span className="hidden sm:inline">Profile</span>
               <span className="sm:hidden">Prof</span>
+            </TabsTrigger> */}
+             <TabsTrigger value="team" className="gap-1 sm:gap-2 text-xs sm:text-sm">
+              <Users className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">Team</span>
+              <span className="sm:hidden">Team</span>
             </TabsTrigger>
             <TabsTrigger value="notifications" className="gap-1 sm:gap-2 text-xs sm:text-sm">
               <Bell className="w-3 h-3 sm:w-4 sm:h-4" />
               <span className="hidden sm:inline">Notifications</span>
               <span className="sm:hidden">Notif</span>
             </TabsTrigger>
-            <TabsTrigger value="team" className="gap-1 sm:gap-2 text-xs sm:text-sm">
-              <Users className="w-3 h-3 sm:w-4 sm:h-4" />
-              <span className="hidden sm:inline">Team</span>
-              <span className="sm:hidden">Team</span>
-            </TabsTrigger>
+           
             <TabsTrigger value="api" className="gap-1 sm:gap-2 text-xs sm:text-sm">
               <Key className="w-3 h-3 sm:w-4 sm:h-4" />
               <span className="hidden sm:inline">API Access</span>
@@ -151,182 +193,6 @@ export function Settings() {
             </TabsTrigger>
           </TabsList>
         </div>
-
-        <TabsContent value="profile" className="space-y-4 sm:space-y-6">
-          <Card className="border-slate-200">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg">Profile Settings</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 sm:space-y-6">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
-                <div className="relative">
-                  <Avatar className="w-16 h-16 sm:w-20 sm:h-20">
-                    <AvatarImage src="/placeholder.svg?height=80&width=80" />
-                    <AvatarFallback className="bg-blue-500 text-white text-lg sm:text-xl">JD</AvatarFallback>
-                  </Avatar>
-                  <Button size="sm" className="absolute -bottom-2 -right-2 rounded-full w-8 h-8 p-0">
-                    <Camera className="w-4 h-4" />
-                  </Button>
-                </div>
-                <div className="min-w-0">
-                  <h3 className="font-semibold text-slate-900">John Doe</h3>
-                  <p className="text-slate-600">Sales Manager</p>
-                  <p className="text-sm text-slate-500 truncate">john@company.com</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="firstName">First Name</Label>
-                  <Input id="firstName" defaultValue="John" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="lastName">Last Name</Label>
-                  <Input id="lastName" defaultValue="Doe" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" defaultValue="john@company.com" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone</Label>
-                  <Input id="phone" defaultValue="+1 (555) 123-4567" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="title">Job Title</Label>
-                  <Input id="title" defaultValue="Sales Manager" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="timezone">Timezone</Label>
-                  <Select defaultValue="pst">
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pst">Pacific Standard Time</SelectItem>
-                      <SelectItem value="mst">Mountain Standard Time</SelectItem>
-                      <SelectItem value="cst">Central Standard Time</SelectItem>
-                      <SelectItem value="est">Eastern Standard Time</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="bio">Bio</Label>
-                <Textarea
-                  id="bio"
-                  placeholder="Tell us about yourself..."
-                  defaultValue="Experienced sales manager with 8+ years in B2B software sales. Passionate about building relationships and driving revenue growth."
-                  className="min-h-[100px]"
-                />
-              </div>
-
-              <div className="flex flex-col sm:flex-row gap-2">
-                <Button className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto">Save Changes</Button>
-                <Button variant="outline" className="w-full sm:w-auto">
-                  Cancel
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="notifications" className="space-y-4 sm:space-y-6">
-          <Card className="border-slate-200">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg">Notification Preferences</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 sm:space-y-6">
-              <div className="space-y-4">
-                <h4 className="font-medium text-slate-900">Delivery Methods</h4>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-3 min-w-0 flex-1">
-                      <Mail className="w-5 h-5 text-slate-500 flex-shrink-0" />
-                      <div className="min-w-0">
-                        <p className="font-medium text-slate-900">Email Notifications</p>
-                        <p className="text-sm text-slate-500">Receive notifications via email</p>
-                      </div>
-                    </div>
-                    <Switch
-                      checked={notifications.email}
-                      onCheckedChange={(checked) => setNotifications((prev) => ({ ...prev, email: checked }))}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-3 min-w-0 flex-1">
-                      <Bell className="w-5 h-5 text-slate-500 flex-shrink-0" />
-                      <div className="min-w-0">
-                        <p className="font-medium text-slate-900">Push Notifications</p>
-                        <p className="text-sm text-slate-500">Receive push notifications in browser</p>
-                      </div>
-                    </div>
-                    <Switch
-                      checked={notifications.push}
-                      onCheckedChange={(checked) => setNotifications((prev) => ({ ...prev, push: checked }))}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-3 min-w-0 flex-1">
-                      <Smartphone className="w-5 h-5 text-slate-500 flex-shrink-0" />
-                      <div className="min-w-0">
-                        <p className="font-medium text-slate-900">SMS Notifications</p>
-                        <p className="text-sm text-slate-500">Receive important alerts via SMS</p>
-                      </div>
-                    </div>
-                    <Switch
-                      checked={notifications.sms}
-                      onCheckedChange={(checked) => setNotifications((prev) => ({ ...prev, sms: checked }))}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <h4 className="font-medium text-slate-900">Notification Types</h4>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="min-w-0 flex-1">
-                      <p className="font-medium text-slate-900">Deal Updates</p>
-                      <p className="text-sm text-slate-500">When deals change status or are updated</p>
-                    </div>
-                    <Switch
-                      checked={notifications.deals}
-                      onCheckedChange={(checked) => setNotifications((prev) => ({ ...prev, deals: checked }))}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="min-w-0 flex-1">
-                      <p className="font-medium text-slate-900">New Leads</p>
-                      <p className="text-sm text-slate-500">When new leads are added to your pipeline</p>
-                    </div>
-                    <Switch
-                      checked={notifications.leads}
-                      onCheckedChange={(checked) => setNotifications((prev) => ({ ...prev, leads: checked }))}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="min-w-0 flex-1">
-                      <p className="font-medium text-slate-900">Task Reminders</p>
-                      <p className="text-sm text-slate-500">Reminders for upcoming and overdue tasks</p>
-                    </div>
-                    <Switch
-                      checked={notifications.tasks}
-                      onCheckedChange={(checked) => setNotifications((prev) => ({ ...prev, tasks: checked }))}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <Button className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto">Save Preferences</Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
 
         <TabsContent value="team" className="space-y-4 sm:space-y-6">
           <Card className="border-slate-200">
@@ -454,6 +320,104 @@ export function Settings() {
                   </div>
                 </>
               )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="notifications" className="space-y-4 sm:space-y-6">
+          <Card className="border-slate-200">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">Notification Preferences</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 sm:space-y-6">
+              <div className="space-y-4">
+                <h4 className="font-medium text-slate-900">Delivery Methods</h4>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <Mail className="w-5 h-5 text-slate-500 flex-shrink-0" />
+                      <div className="min-w-0">
+                        <p className="font-medium text-slate-900">Email Notifications</p>
+                        <p className="text-sm text-slate-500">Receive notifications via email</p>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={notifications.email}
+                      onCheckedChange={(checked) => setNotifications((prev) => ({ ...prev, email: checked }))}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <Bell className="w-5 h-5 text-slate-500 flex-shrink-0" />
+                      <div className="min-w-0">
+                        <p className="font-medium text-slate-900">Push Notifications</p>
+                        <p className="text-sm text-slate-500">Receive push notifications in browser</p>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={notifications.push}
+                      onCheckedChange={(checked) => setNotifications((prev) => ({ ...prev, push: checked }))}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <Smartphone className="w-5 h-5 text-slate-500 flex-shrink-0" />
+                      <div className="min-w-0">
+                        <p className="font-medium text-slate-900">SMS Notifications</p>
+                        <p className="text-sm text-slate-500">Receive important alerts via SMS</p>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={notifications.sms}
+                      onCheckedChange={(checked) => setNotifications((prev) => ({ ...prev, sms: checked }))}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <h4 className="font-medium text-slate-900">Notification Types</h4>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-slate-900">Deal Updates</p>
+                      <p className="text-sm text-slate-500">When deals change status or are updated</p>
+                    </div>
+                    <Switch
+                      checked={notifications.deals}
+                      onCheckedChange={(checked) => setNotifications((prev) => ({ ...prev, deals: checked }))}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-slate-900">New Leads</p>
+                      <p className="text-sm text-slate-500">When new leads are added to your pipeline</p>
+                    </div>
+                    <Switch
+                      checked={notifications.leads}
+                      onCheckedChange={(checked) => setNotifications((prev) => ({ ...prev, leads: checked }))}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-slate-900">Task Reminders</p>
+                      <p className="text-sm text-slate-500">Reminders for upcoming and overdue tasks</p>
+                    </div>
+                    <Switch
+                      checked={notifications.tasks}
+                      onCheckedChange={(checked) => setNotifications((prev) => ({ ...prev, tasks: checked }))}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <Button className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto" onClick={handleSaveNotifications} disabled={notifLoading}>
+                {notifLoading ? "Saving..." : "Save Preferences"}
+              </Button>
             </CardContent>
           </Card>
         </TabsContent>

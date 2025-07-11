@@ -22,9 +22,11 @@ interface DealFormProps {
   onSubmit: (data: any) => void
   onCancel: () => void
   isEdit?: boolean
+  teamMembers: any[];
+  contacts: any[];
 }
 
-export function DealForm({ deal, onSubmit, onCancel, isEdit = false }: DealFormProps) {
+export function DealForm({ deal, onSubmit, onCancel, isEdit = false, teamMembers, contacts }: DealFormProps) {
   const [formData, setFormData] = useState({
     title: deal?.title || "",
     description: deal?.description || "",
@@ -256,13 +258,18 @@ export function DealForm({ deal, onSubmit, onCancel, isEdit = false }: DealFormP
                   <Label htmlFor="contactId">Primary Contact</Label>
                   <Select value={formData.contactId} onValueChange={(value) => updateFormData("contactId", value)}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select contact" />
+                      <SelectValue placeholder="Select primary contact" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="1">Alex Thompson - TechStart Inc.</SelectItem>
-                      <SelectItem value="2">Sarah Wilson - Global Solutions</SelectItem>
-                      <SelectItem value="3">Michael Chen - Innovation Labs</SelectItem>
-                      <SelectItem value="4">Emily Rodriguez - Future Corp</SelectItem>
+                      {contacts.length === 0 ? (
+                        <SelectItem value="none" disabled>No contacts found</SelectItem>
+                      ) : (
+                        contacts.map(contact => (
+                          <SelectItem key={contact.id} value={contact.id}>
+                            {contact.first_name} {contact.last_name} ({contact.email})
+                          </SelectItem>
+                        ))
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
@@ -273,10 +280,15 @@ export function DealForm({ deal, onSubmit, onCancel, isEdit = false }: DealFormP
                       <SelectValue placeholder="Select team member" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="john">John Doe</SelectItem>
-                      <SelectItem value="sarah">Sarah Johnson</SelectItem>
-                      <SelectItem value="mike">Mike Chen</SelectItem>
-                      <SelectItem value="emma">Emma Davis</SelectItem>
+                      {teamMembers.length === 0 ? (
+                        <SelectItem value="none" disabled>No team members found</SelectItem>
+                      ) : (
+                        teamMembers.map(member => (
+                          <SelectItem key={member.id} value={member.id}>
+                            {member.first_name} {member.last_name} ({member.email})
+                          </SelectItem>
+                        ))
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
@@ -293,7 +305,7 @@ export function DealForm({ deal, onSubmit, onCancel, isEdit = false }: DealFormP
                     <span className="text-sm font-medium text-slate-900">{formData.probability[0]}%</span>
                   </div>
                   <Slider
-                    value={formData.probability}
+                    value={Array.isArray(formData.probability) ? formData.probability : [formData.probability]}
                     onValueChange={(value) => updateFormData("probability", value)}
                     max={100}
                     step={5}
