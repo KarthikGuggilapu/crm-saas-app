@@ -5,6 +5,9 @@ import { Register } from "@/components/auth/register";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { Loader2 } from "lucide-react";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -98,21 +101,62 @@ export default function RegisterPage() {
     }, 1500);
   };
 
-  if (loading) return <div>Loading...</div>;
-  if (inviteToken && !invite) return <div>Invalid or expired invite.</div>;
+  if (loading)
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-muted">
+        <Card className="w-full max-w-md shadow-lg">
+          <CardContent className="flex flex-col items-center py-12">
+            <Loader2 className="animate-spin h-8 w-8 text-primary mb-4" />
+            <span className="text-muted-foreground">Loading...</span>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  if (inviteToken && !invite)
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-muted">
+        <Card className="w-full max-w-md shadow-lg">
+          <CardContent className="py-12">
+            <Alert variant="destructive">
+              <AlertTitle>Invalid or Expired Invite</AlertTitle>
+              <AlertDescription>
+                The invitation link is invalid or has already been used.
+              </AlertDescription>
+            </Alert>
+          </CardContent>
+        </Card>
+      </div>
+    );
 
   return (
-    <Register
-      onRegister={handleRegister}
-      onSwitchToLogin={() => router.push("/login")}
-      onBackToLanding={() => router.push("/")}
-      // Optionally, pass pre-filled values:
-      prefillEmail={invite?.email}
-      prefillCompany={companyName}
-      prefillRole={invite?.role}
-      disableEmail={!!invite}
-      disableCompany={!!invite}
-    />
+    <div className="flex min-h-screen items-center justify-center bg-muted px-2">
+      <Card className="w-full max-w-md shadow-lg">
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl font-bold">
+            {invite
+              ? `Join ${companyName ? companyName : "the company"}`
+              : "Create your account"}
+          </CardTitle>
+          <p className="text-muted-foreground text-sm mt-2">
+            {invite
+              ? `You have been invited as a${invite.role ? ` ${invite.role}` : " member"}.`
+              : "Sign up to get started with your CRM workspace."}
+          </p>
+        </CardHeader>
+        <CardContent className="py-6">
+          <Register
+            onRegister={handleRegister}
+            onSwitchToLogin={() => router.push("/login")}
+            onBackToLanding={() => router.push("/")}
+            prefillEmail={invite?.email}
+            prefillCompany={companyName}
+            prefillRole={invite?.role}
+            disableEmail={!!invite}
+            disableCompany={!!invite}
+          />
+        </CardContent>
+      </Card>
+    </div>
   );
 }
 
