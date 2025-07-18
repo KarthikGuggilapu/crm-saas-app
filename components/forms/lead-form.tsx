@@ -245,7 +245,7 @@ export function LeadForm({ lead, onSubmit, onCancel, isEdit = false }: LeadFormP
                   <PopoverContent className="w-auto p-0">
                     <Calendar
                       mode="single"
-                      selected={formData.expectedCloseDate}
+                      selected={formData.expectedCloseDate ? (typeof formData.expectedCloseDate === 'string' ? new Date(formData.expectedCloseDate) : formData.expectedCloseDate) : undefined}
                       onSelect={(date) => updateFormData("expectedCloseDate", date)}
                       initialFocus
                     />

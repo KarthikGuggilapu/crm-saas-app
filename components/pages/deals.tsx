@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Progress } from "@/components/ui/progress"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Plus, MoreHorizontal, DollarSign, Calendar, Building2, TrendingUp, Clock, Target, Edit, Trash2 } from "lucide-react"
+import { Plus, MoreHorizontal, DollarSign, Calendar, Building2, TrendingUp, Clock, Target, Edit, Trash2, Grid3X3, List } from "lucide-react"
 import { DealForm } from "@/components/forms/deal-form"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
@@ -66,6 +66,7 @@ export function Deals() {
   const [draggedDeal, setDraggedDeal] = useState<any>(null)
   const [teamMembers, setTeamMembers] = useState<any[]>([])
   const [contacts, setContacts] = useState<any[]>([])
+  const [viewMode, setViewMode] = useState<'kanban' | 'list'>('kanban')
 
   const fetchDeals = async () => {
     setLoading(true)
@@ -308,23 +309,44 @@ export function Deals() {
             <h1 className="text-3xl font-bold text-slate-900">Deals Pipeline</h1>
             <p className="text-slate-600 mt-2">Track and manage your sales opportunities</p>
           </div>
-          <Sheet open={isAddDealOpen} onOpenChange={setIsAddDealOpen}>
-            <SheetTrigger asChild>
-              <Button className="bg-blue-600 hover:bg-blue-700 text-white gap-2 w-full sm:w-auto px-6 py-3">
-                <Plus className="w-5 h-5" />
-                Add New Deal
-              </Button>
-            </SheetTrigger>
-            <SheetContent className="w-full sm:max-w-4xl overflow-y-auto">
-              <DialogTitle>Add New Deal</DialogTitle>
-              <DealForm
-                onSubmit={handleAddDeal}
-                onCancel={() => setIsAddDealOpen(false)}
-                teamMembers={teamMembers}
-                contacts={contacts}
-              />
-            </SheetContent>
-          </Sheet>
+          <div className="flex items-center gap-2">
+            {/* Icon View Toggle Buttons */}
+            <Button
+              variant={viewMode === 'kanban' ? 'default' : 'outline'}
+              size="icon"
+              className={viewMode === 'kanban' ? 'bg-blue-600 text-white' : ''}
+              onClick={() => setViewMode('kanban')}
+              aria-label="Pipeline View"
+            >
+              <Grid3X3 className="w-5 h-5" />
+            </Button>
+            <Button
+              variant={viewMode === 'list' ? 'default' : 'outline'}
+              size="icon"
+              className={viewMode === 'list' ? 'bg-blue-600 text-white' : ''}
+              onClick={() => setViewMode('list')}
+              aria-label="List View"
+            >
+              <List className="w-5 h-5" />
+            </Button>
+            <Sheet open={isAddDealOpen} onOpenChange={setIsAddDealOpen}>
+              <SheetTrigger asChild>
+                <Button className="bg-blue-600 hover:bg-blue-700 text-white gap-2 w-full sm:w-auto px-6 py-3">
+                  <Plus className="w-5 h-5" />
+                  Add New Deal
+                </Button>
+              </SheetTrigger>
+              <SheetContent className="w-full sm:max-w-4xl overflow-y-auto">
+                <DialogTitle>Add New Deal</DialogTitle>
+                <DealForm
+                  onSubmit={handleAddDeal}
+                  onCancel={() => setIsAddDealOpen(false)}
+                  teamMembers={teamMembers}
+                  contacts={contacts}
+                />
+              </SheetContent>
+            </Sheet>
+          </div>
         </div>
 
         {/* Pipeline Stats */}
@@ -390,124 +412,171 @@ export function Deals() {
           </Card>
         </div>
 
-        {/* Kanban Board */}
-        <div className="w-full">
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-7 gap-6 w-full">
-            {dealStages.map((stage) => (
-              <Card
-                key={stage.id}
-                className={`border-2 ${stage.color} min-h-[600px] w-full`}
-                onDragOver={handleDragOver}
-                onDrop={(e) => handleDrop(e, stage.id)}
-              >
-                <CardHeader className="pb-4">
-                  <CardTitle className="flex items-center justify-between">
-                    <span className="font-semibold text-slate-800 text-base">{stage.title}</span>
-                    <Badge variant="secondary" className="bg-white/80 text-slate-700 font-medium">
-                      {groupedDeals[stage.id]?.length || 0}
-                    </Badge>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {groupedDeals[stage.id]?.map((deal) => (
-                    <Card
-                      key={deal.id}
-                      className="p-5 cursor-move hover:shadow-lg transition-all duration-200 border-slate-200 bg-white"
-                      draggable
-                      onDragStart={(e) => handleDragStart(e, deal, stage.id)}
-                    >
-                      <div className="space-y-4">
-                        {/* Header with title and actions */}
-                        <div className="flex items-start justify-between gap-3">
-                          <h4 className="font-semibold text-slate-900 text-base leading-tight flex-1">{deal.title}</h4>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 flex-shrink-0">
-                                <MoreHorizontal className="w-4 h-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => handleEditDeal(deal)}>
-                                <Edit className="w-4 h-4" /> Edit Deal
-                              </DropdownMenuItem>
-                              <DropdownMenuItem>
-                                View Details
-                              </DropdownMenuItem>
-                              <DropdownMenuItem className="text-red-600" onClick={() => handleDeleteDeal(deal)}>
-                                <Trash2 className="w-4 h-4" /> Delete Deal
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-
-                        {/* Value and Priority */}
-                        <div className="flex items-center justify-between">
-                          <span className="font-bold text-green-600 text-lg">{deal.currency || "USD"} {deal.value?.toLocaleString()}</span>
-                          <Badge className={`${getPriorityColor(deal.priority)} text-xs font-medium`}>
-                            {deal.priority}
-                          </Badge>
-                        </div>
-
-                        {/* Company and Contact Info */}
-                        <div className="space-y-3">
-                          <div className="flex items-center gap-3">
-                            <Building2 className="w-4 h-4 text-slate-500 flex-shrink-0" />
-                            <span className="text-sm font-medium text-slate-700 truncate">{deal.company_id}</span>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <Avatar className="w-6 h-6 flex-shrink-0">
-                              <AvatarFallback className="bg-blue-500 text-white text-xs font-medium">
-                                {/* You can fetch contact initials if needed */}
-                                {deal.contact_id?.toString().slice(0, 2)}
-                              </AvatarFallback>
-                            </Avatar>
-                            <span className="text-sm text-slate-600 truncate">{deal.contact_id}</span>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <Calendar className="w-4 h-4 text-slate-500 flex-shrink-0" />
-                            <span className="text-sm text-slate-600">{deal.close_date}</span>
-                          </div>
-                        </div>
-
-                        {/* Probability Progress */}
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-medium text-slate-600">Probability</span>
-                            <span className="text-xs font-bold text-slate-800">{deal.probability}%</span>
-                          </div>
-                          <Progress value={deal.probability} className="h-2" />
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
-
-                  {/* Add Deal Button */}
-                  <Sheet>
-                    <SheetTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        className="w-full border-2 border-dashed border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-slate-600 hover:text-slate-700 h-16 text-sm font-medium"
+        {/* Kanban Board or List View */}
+        {viewMode === 'kanban' ? (
+          <div className="w-full">
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-7 gap-6 w-full">
+              {dealStages.map((stage) => (
+                <Card
+                  key={stage.id}
+                  className={`border-2 ${stage.color} min-h-[600px] w-full`}
+                  onDragOver={handleDragOver}
+                  onDrop={(e) => handleDrop(e, stage.id)}
+                >
+                  <CardHeader className="pb-4">
+                    <CardTitle className="flex items-center justify-between">
+                      <span className="font-semibold text-slate-800 text-base">{stage.title}</span>
+                      <Badge variant="secondary" className="bg-white/80 text-slate-700 font-medium">
+                        {groupedDeals[stage.id]?.length || 0}
+                      </Badge>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {groupedDeals[stage.id]?.map((deal) => (
+                      <Card
+                        key={deal.id}
+                        className="p-5 cursor-move hover:shadow-lg transition-all duration-200 border-slate-200 bg-white"
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, deal, stage.id)}
                       >
-                        <Plus className="w-5 h-5 mr-2" />
-                        Add Deal
-                      </Button>
-                    </SheetTrigger>
-                    <SheetContent className="w-full sm:max-w-4xl overflow-y-auto">
-                      <DialogTitle>Add New Deal</DialogTitle>
-                      <DealForm
-                        deal={{ stage: stage.id }}
-                        onSubmit={handleAddDeal}
-                        onCancel={() => {}}
-                        teamMembers={teamMembers}
-                        contacts={contacts}
-                      />
-                    </SheetContent>
-                  </Sheet>
-                </CardContent>
-              </Card>
-            ))}
+                        <div className="space-y-4">
+                          {/* Header with title and actions */}
+                          <div className="flex items-start justify-between gap-3">
+                            <h4 className="font-semibold text-slate-900 text-base leading-tight flex-1">{deal.title}</h4>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 flex-shrink-0">
+                                  <MoreHorizontal className="w-4 h-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handleEditDeal(deal)}>
+                                  <Edit className="w-4 h-4" /> Edit Deal
+                                </DropdownMenuItem>
+                                <DropdownMenuItem>
+                                  View Details
+                                </DropdownMenuItem>
+                                <DropdownMenuItem className="text-red-600" onClick={() => handleDeleteDeal(deal)}>
+                                  <Trash2 className="w-4 h-4" /> Delete Deal
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+
+                          {/* Value and Priority */}
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-green-600 text-lg">{deal.currency || "USD"} {deal.value?.toLocaleString()}</span>
+                            <Badge className={`${getPriorityColor(deal.priority)} text-xs font-medium`}>
+                              {deal.priority}
+                            </Badge>
+                          </div>
+
+                          {/* Company and Contact Info */}
+                          <div className="space-y-3">
+                            <div className="flex items-center gap-3">
+                              <Building2 className="w-4 h-4 text-slate-500 flex-shrink-0" />
+                              <span className="text-sm font-medium text-slate-700 truncate">{deal.company_id}</span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <Avatar className="w-6 h-6 flex-shrink-0">
+                                <AvatarFallback className="bg-blue-500 text-white text-xs font-medium">
+                                  {/* You can fetch contact initials if needed */}
+                                  {deal.contact_id?.toString().slice(0, 2)}
+                                </AvatarFallback>
+                              </Avatar>
+                              <span className="text-sm text-slate-600 truncate">{deal.contact_id}</span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <Calendar className="w-4 h-4 text-slate-500 flex-shrink-0" />
+                              <span className="text-sm text-slate-600">{deal.close_date}</span>
+                            </div>
+                          </div>
+
+                          {/* Probability Progress */}
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-medium text-slate-600">Probability</span>
+                              <span className="text-xs font-bold text-slate-800">{deal.probability}%</span>
+                            </div>
+                            <Progress value={deal.probability} className="h-2" />
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
+
+                    {/* Add Deal Button */}
+                    <Sheet>
+                      <SheetTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          className="w-full border-2 border-dashed border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-slate-600 hover:text-slate-700 h-16 text-sm font-medium"
+                        >
+                          <Plus className="w-5 h-5 mr-2" />
+                          Add Deal
+                        </Button>
+                      </SheetTrigger>
+                      <SheetContent className="w-full sm:max-w-4xl overflow-y-auto">
+                        <DialogTitle>Add New Deal</DialogTitle>
+                        <DealForm
+                          deal={{ stage: stage.id }}
+                          onSubmit={handleAddDeal}
+                          onCancel={() => {}}
+                          teamMembers={teamMembers}
+                          contacts={contacts}
+                        />
+                      </SheetContent>
+                    </Sheet>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </div>
-        </div>
+        ) : (
+          // List View
+          <div className="w-full overflow-x-auto">
+            <table className="min-w-full bg-white border border-slate-200 rounded-lg">
+              <thead>
+                <tr className="bg-slate-50">
+                  <th className="px-4 py-2 text-left text-xs font-semibold text-slate-700">Title</th>
+                  <th className="px-4 py-2 text-left text-xs font-semibold text-slate-700">Value</th>
+                  <th className="px-4 py-2 text-left text-xs font-semibold text-slate-700">Stage</th>
+                  <th className="px-4 py-2 text-left text-xs font-semibold text-slate-700">Priority</th>
+                  <th className="px-4 py-2 text-left text-xs font-semibold text-slate-700">Company</th>
+                  <th className="px-4 py-2 text-left text-xs font-semibold text-slate-700">Contact</th>
+                  <th className="px-4 py-2 text-left text-xs font-semibold text-slate-700">Close Date</th>
+                  <th className="px-4 py-2 text-left text-xs font-semibold text-slate-700">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {deals.map((deal) => (
+                  <tr key={deal.id} className="border-t border-slate-100 hover:bg-slate-50">
+                    <td className="px-4 py-2 font-medium text-slate-900">{deal.title}</td>
+                    <td className="px-4 py-2 text-green-700 font-semibold">{deal.currency || "USD"} {deal.value?.toLocaleString()}</td>
+                    <td className="px-4 py-2">{dealStages.find(s => s.id === deal.stage)?.title || deal.stage}</td>
+                    <td className="px-4 py-2">
+                      <Badge className={`${getPriorityColor(deal.priority)} text-xs font-medium`}>
+                        {deal.priority}
+                      </Badge>
+                    </td>
+                    <td className="px-4 py-2">{deal.company_id}</td>
+                    <td className="px-4 py-2">{deal.contact_id}</td>
+                    <td className="px-4 py-2">{deal.close_date}</td>
+                    <td className="px-4 py-2">
+                      <div className="flex gap-2">
+                        <Button size="icon" variant="ghost" onClick={() => handleEditDeal(deal)}>
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button size="icon" variant="ghost" onClick={() => handleDeleteDeal(deal)}>
+                          <Trash2 className="w-4 h-4 text-red-600" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
 
         {/* Edit Deal Sheet */}
         <Sheet open={isEditDealOpen} onOpenChange={(open) => { setIsEditDealOpen(open); if (!open) setEditDeal(null) }}>

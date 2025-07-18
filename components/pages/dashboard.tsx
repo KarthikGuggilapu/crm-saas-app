@@ -41,9 +41,10 @@ export function Dashboard() {
     async function getUserAndCompany() {
       const { data: userData } = await supabase.auth.getUser()
       const user = userData?.user
-      if (!user) return { user: null, company: null }
+      if (!user) throw new Error("User not found")
       const { data: profile } = await supabase.from("users").select("company").eq("id", user.id).single()
-      return { user, company: profile?.company }
+      if (!profile?.company) throw new Error("Company not found")
+      return { user, company: profile.company }
     }
 
     // Overview cards
@@ -52,7 +53,6 @@ export function Dashboard() {
       setOverviewError(null)
       try {
         const { user, company } = await getUserAndCompany()
-        if (!user) throw new Error("User not authenticated")
         // Total Leads
         const { count: leadsCount } = await supabase
           .from("leads")

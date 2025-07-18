@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge"
 import { Search, Bell, Settings, User, LogOut, HelpCircle } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useUser } from "@/components/auth/UserContext"
+import { createClient } from "@/lib/supabase/client"
 
 interface TopNavigationProps {
   onNotificationsToggle: () => void
@@ -34,6 +35,11 @@ export function TopNavigation({ onNotificationsToggle, notificationsOpen, user }
   const router = useRouter()
   const { user: contextUser, loading } = useUser()
 
+  const handleSignOut = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.replace("/login");
+  };
 
   return (
     <header className="bg-white border-b border-slate-200 px-6 py-4 sticky top-0 z-50 w-full">
@@ -83,7 +89,6 @@ export function TopNavigation({ onNotificationsToggle, notificationsOpen, user }
                        contextUser?.email?.[0]?.toUpperCase() || "U"}
                     </AvatarFallback>
 
-                    
                   )}
                 </Avatar>
                 <div className="text-left hidden sm:block">
@@ -110,7 +115,7 @@ export function TopNavigation({ onNotificationsToggle, notificationsOpen, user }
                 Help & Support
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="gap-2 text-red-600">
+              <DropdownMenuItem className="gap-2 text-red-600" onClick={handleSignOut}>
                 <LogOut className="w-4 h-4" />
                 Sign Out
               </DropdownMenuItem>

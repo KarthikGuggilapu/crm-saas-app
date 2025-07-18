@@ -527,7 +527,7 @@ export function Tasks() {
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <UIDialogTitle>Edit Task</UIDialogTitle>
           <TaskForm
-            task={editTask}
+            task={editTask ? { ...editTask, dueDate: editTask.due_date } : undefined}
             onSubmit={handleUpdateTask}
             onCancel={() => { setIsEditTaskOpen(false); setEditTask(null) }}
             isEdit={true}
